@@ -4,7 +4,50 @@ import (
 	"../config"
 	"../models"
 	"github.com/gin-gonic/gin"
+	"time"
+	"github.com/dgrijalva/jwt-go"
+	"fmt"
 )
+
+func LoginUser(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	var user models.User
+
+	if config.DB.Where(map[string]interface{}{
+		"username": username,
+		"password": password,
+	}).Find(&user).RecordNotFound() {
+		c.JSON(404, gin.H{
+			"code": "200",
+			"message": "User not found.",
+		})
+		c.Abort()
+		return
+	}
+	new_token := createToken(&user)
+	c.JSON(200, gin.H{
+		"code": 200,
+		"user": user,
+		"token": new_token,
+	})
+}
+
+func createToken(user *models.User) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+        "exp": time.Now().AddDate(0, 0, 7).Unix(),
+        "iat": time.Now().Unix(),
+	})
+	
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte("SECRET"))
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    return tokenString
+}
 
 func GetAllUser(c *gin.Context) {
 	users := []models.User{}
@@ -22,7 +65,7 @@ func GetUser(c *gin.Context) {
 
 	if config.DB.First(&user, "id = ?", id).RecordNotFound() {
 		c.JSON(404, gin.H{
-			"code": "200",
+			"code": "404",
 			"message": "User not found.",
 		})
 		c.Abort()
@@ -30,7 +73,7 @@ func GetUser(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"code": "404",
+		"code": "200",
 		"data": user,
 	})
 }

@@ -4,6 +4,7 @@ import (
 	"./config"
 	"./routes"
 	"github.com/gin-gonic/gin"
+	"./middleware"
 )
 
 func main() {
@@ -14,13 +15,14 @@ func main() {
 
 	v1 := router.Group("api/v1")
 	{
-		articles := v1.Group("users")
+		users := v1.Group("users")
 		{
-			articles.GET("/", routes.GetAllUser)
-			articles.GET("/detail/:id", routes.GetUser)
-			articles.POST("/create", routes.CreateUser)
-			articles.PUT("/update/:id", routes.UpdateUser)
-			articles.DELETE("/delete/:id", routes.DeleteUser)
+			users.GET("/", middleware.IsAuth(), routes.GetAllUser)
+			users.GET("/detail/:id", middleware.IsAuth(), routes.GetUser)
+			users.POST("/create", middleware.IsAuth(), routes.CreateUser)
+			users.PUT("/update/:id", middleware.IsAuth(), routes.UpdateUser)
+			users.DELETE("/delete/:id", middleware.IsAuth(), routes.DeleteUser)
+			users.POST("/login", middleware.IsAuth(), routes.LoginUser)
 		}
 	}
 	router.Run()
